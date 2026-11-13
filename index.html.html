@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EQ-Тренажер: Разговор с подростком</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #chat-container {
+            width: 100%;
+            max-width: 500px;
+            height: 80vh;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        #chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            line-height: 1.4;
+            font-size: 0.95em;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .bot-message {
+            background-color: #e2e8f0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .user-message {
+            background-color: #4a90e2;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .system-message {
+            background-color: #fffbdd;
+            color: #8a6d3b;
+            border: 1px solid #faebcc;
+            align-self: center;
+            text-align: center;
+            font-size: 0.85em;
+            max-width: 90%;
+            border-radius: 8px;
+        }
+
+        #options-container {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+
+        .option-btn {
+            background-color: #fff;
+            border: 2px solid #4a90e2;
+            color: #4a90e2;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.95em;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        .option-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #ccc;
+            color: #999;
+        }
+
+        .restart-btn {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .restart-btn:hover {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="header">Чат-бот: Эмоциональный компас</div>
+    <div id="chat-box"></div>
+    <div id="options-container"></div>
+</div>
+
+<script>
+    // Сценарий (Дерево диалога)
+    const scenario = {
+        start: {
+            text: "Перемена. Вы заходите в класс и видите, как Максим (трудный подросток) схватил телефон одноклассника и замахнулся, чтобы его разбить. Вокруг смеются. Ваши действия?",
+            options: [
+                { text: "«Максим, немедленно отдай телефон! Ты что творишь?!» (Крик)", next: "escalation_1" },
+                { text: "Спокойно подойти и тихо сказать: «Максим, выйдем в коридор, поговорим»", next: "calm_1" },
+                { text: "Игнорировать (Подумать: «Это не мой класс, пусть разбирается их классрук»)", next: "ignore_1" }
+            ]
+        },
+        // Ветка 1: Эскалация (Крик)
+        escalation_1: {
+            text: "Максим: «А вы вообще кто?! Не лезьте не в свое дело!» Он сжимает телефон сильнее, в глазах злость. Класс затих и смотрит на вас.",
+            options: [
+                { text: "«Я учитель! И я требую уважения!»", next: "end_bad" },
+                { text: "Сделать паузу, выдохнуть и сменить тон: «Хорошо. Я вижу, ты злишься. Давай обсудим это без свидетелей»", next: "calm_2" }
+            ]
+        },
+        // Ветка 2: Спокойное начало
+        calm_1: {
+            text: "Максим колеблется, но отпускает одноклассника, телефон падает на парту. «Ну выйдем. И чё?»",
+            options: [
+                { text: "«Я не собираюсь тебя ругать. Хочу понять, что произошло. Почему ты так разозлился?»", next: "trust_end" },
+                { text: "«Ты понимаешь, что чуть не сломал чужую вещь? Твои родители будут платить»", next: "escalation_2" }
+            ]
+        },
+        // Ветка 3: Игнорирование
+        ignore_1: {
+            text: "Вы отворачиваетесь. За спиной раздается звук бьющегося стекла и крик. Через минуту в кабинет вбегает классный руководитель и завуч. Вы понимаете, что вас тоже вызовут на разбор.",
+            options: [
+                { text: "Начать заново", next: "start" }
+            ]
+        },
+        // Продолжение эскалации
+        escalation_2: {
+            text: "Максим: «Да плевать мне на деньги! Все всегда меня только обвиняют!» Он разворачивается и со всей силы бьет кулаком в дверь, уходя из класса.",
+            options: [
+                { text: "Начать заново", next: "start" }
+            ]
+        },
+        // Продолжение спокойствия (после выдоха)
+        calm_2: {
+            text: "Максим выдыхает, опускает телефон. «Он сказал, что моя мать... ну, вы знаете... в общем, он первый начал». Он выглядит подавленным, агрессия ушла.",
+            options: [
+                { text: "«Я понимаю, тебя это задело. Но бить чужие вещи — не выход. Давай решим, что делать с обидчиком»", next: "trust_end" },
+                { text: "«Это не оправдание. Отдай телефон и извинись перед ним прямо сейчас»", next: "end_medium" }
+            ]
+        },
+        // Исходы
+        end_bad: {
+            text: "СИСТЕМА: Эмоциональный исход — КРИТИЧЕСКИЙ. Максим разбивает телефон, начинается драка. Вас вызывают к директору. Эскалация конфликта произошла из-за ответной агрессии. Попробуйте найти подход с холодной головой.",
+            options: [
+                { text: "Пройти заново", next: "start" }
+            ]
+        },
+        end_medium: {
+            text: "СИСТЕМА: Эмоциональный исход — НЕЙТРАЛЬНЫЙ. Конфликт утих, телефон цел. Однако доверительного контакта с Максимом не произошло. Он замкнулся в себе. Вы решили проблему формально.",
+            options: [
+                { text: "Пройти заново", next: "start" }
+            ]
+        },
+        trust_end: {
+            text: "СИСТЕМА: Эмоциональный исход — ДОВЕРИТЕЛЬНЫЙ РАЗГОВОР. Максим отдает телефон, вы помогаете ему найти слова для конструктивного диалога с обидчиком. Вы получили кредит доверия от подростка.",
+            options: [
+                { text: "Пройти заново", next: "start" }
+            ]
+        }
+    };
+
+    const chatBox = document.getElementById('chat-box');
+    const optionsContainer = document.getElementById('options-container');
+    let currentId = 'start';
+
+    function renderNode(nodeId) {
+        currentId = nodeId;
+        const node = scenario[nodeId];
+
+        // Добавляем сообщение бота
+        const botMsg = document.createElement('div');
+        botMsg.className = 'message bot-message';
+        if (node.text.startsWith("СИСТЕМА:")) {
+            botMsg.className = 'message system-message';
+            botMsg.innerText = node.text;
+        } else {
+            botMsg.innerText = node.text;
+        }
+        chatBox.appendChild(botMsg);
+        
+        // Скролл вниз
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Очищаем контейнер с кнопками
+        optionsContainer.innerHTML = '';
+
+        // Рендерим новые кнопки
+        node.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt.text;
+            
+            // Если это кнопка рестарта, меняем стиль
+            if (opt.text === "Начать заново" || opt.text === "Пройти заново") {
+                btn.classList.add('restart-btn');
+            }
+
+            btn.onclick = () => {
+                // Добавляем сообщение пользователя (его выбор)
+                const userMsg = document.createElement('div');
+                userMsg.className = 'message user-message';
+                userMsg.innerText = opt.text;
+                chatBox.appendChild(userMsg);
+                
+                // Если это рестарт - очищаем чат
+                if (opt.text === "Начать заново" || opt.text === "Пройти заново") {
+                    setTimeout(() => {
+                        chatBox.innerHTML = '';
+                        renderNode('start');
+                    }, 300);
+                } else {
+                    // Иначе идем дальше по сценарию
+                    setTimeout(() => {
+                        renderNode(opt.next);
+                    }, 300);
+                }
+            };
+            
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    // Запуск игры
+    renderNode('start');
+</script>
+
+</body>
+</html>
+</html>
